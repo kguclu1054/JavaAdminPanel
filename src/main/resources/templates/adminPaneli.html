@@ -6,29 +6,304 @@
     <title>Admin Paneli</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
-        body {
-            background-color: #f8f9fa;
+        body { background-color: #f8f9fa; }
+        .sidebar {
+            width: 250px;
+            height: 100vh;
+            position: fixed;
+            left: 0;
+            top: 0;
+            background-color: #343a40;
+            padding-top: 20px;
+            color: white;
         }
-        .admin-container {
-            max-width: 600px;
-            margin: 100px auto;
+        .sidebar a {
+            display: block;
+            color: white;
+            text-decoration: none;
+            padding: 15px;
+            transition: 0.3s;
+        }
+        .sidebar a:hover { background-color: #495057; }
+        .content {
+            margin-left: 260px;
             padding: 30px;
             background: #fff;
             border-radius: 10px;
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-            text-align: center;
         }
+        .hidden { display: none; }
     </style>
 </head>
 <body>
 
-<div class="admin-container">
-    <h2 class="text-primary">Admin Paneline Hoş Geldiniz!</h2>
-    <p class="text-muted">Bu panel üzerinden sisteminizi yönetebilirsiniz.</p>
-    <a href="#" class="btn btn-primary">Kontrol Paneline Git</a>
+<div class="sidebar">
+    <h4 class="text-center">Admin Panel</h4>
+    <a href="#" onclick="showSection('profileSection')">Profil</a>
+    <a href="#" onclick="showSection('projectsSection')">Boş</a>
+    <a href="#" onclick="showSection('imagesSection')">Projeler</a>
+	<a href="#" onclick="showSection('skillsSection')">Yetenekler</a>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<div class="container mt-5">
+    <div id="profileSection" class="content">
+        <h2 class="text-primary">Profil Düzenleme</h2>
+        <form id="profileForm">
+            <div class="mb-3">
+                <label for="profileDescription" class="form-label">Profil Açıklaması:</label>
+                <textarea class="form-control" id="profileDescription" rows="3" required></textarea>
+            </div>
+            <button type="submit" class="btn btn-success">Profili Güncelle</button>
+        </form>
+        <p id="profileMessage" class="mt-3 text-success"></p>
+    </div>
+
+    <div id="projectsSection" class="content hidden">
+        <h2 class="text-primary">Projeler</h2>
+        <form id="projectForm">
+            <div class="mb-3">
+                <label for="projectName" class="form-label">Proje Adı:</label>
+                <input type="text" class="form-control" id="projectName" required>
+            </div>
+            <button type="submit" class="btn btn-primary">Projeyi Ekle</button>
+        </form>
+        <ul id="projectList" class="mt-3 list-group"></ul>
+    </div>
+
+    <div id="imagesSection" class="content hidden">
+        <h2 class="text-primary">Yüklenen Resimler</h2>
+        <form id="uploadForm" enctype="multipart/form-data" class="mt-4">
+            <div class="mb-3">
+                <label for="file" class="form-label">Resim Seç:</label>
+                <input type="file" class="form-control" id="file" name="file" required>
+            </div>
+            <button type="submit" class="btn btn-primary">Resmi Yükle</button>
+        </form>
+        <div id="imageContainer" class="row mt-4"></div>
+    </div>
+	
+	<div id="skillsSection" class="content hidden">
+	    <h2 class="text-primary">Yetenekler</h2>
+	    <form id="skillsForm">
+	        <div class="mb-3">
+	            <label for="skillName" class="form-label">Yetenek Adı:</label>
+	            <input type="text" class="form-control" id="skillName" required>
+	        </div>
+	        <button type="submit" class="btn btn-primary">Yetenek Ekle</button>
+	    </form>
+	    <ul id="skillsList" class="mt-3 list-group"></ul>
+	</div>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", async () => {
+    showSection("profileSection");
+    await loadProfileDescription();
+    loadImages();
+});
+
+function showSection(sectionId) {
+    document.querySelectorAll('.content').forEach(section => section.classList.add('hidden'));
+    document.getElementById(sectionId).classList.remove('hidden');
+}
+
+// **Profil Açıklamasını Backend'den Çekme**
+async function loadProfileDescription() {
+    try {
+        const response = await fetch("http://localhost:8080/profile/description");
+        if (!response.ok) throw new Error("Profil açıklaması alınamadı!");
+        const description = await response.text();
+        document.getElementById("profileDescription").value = description;
+    } catch (error) {
+        console.error("Hata:", error);
+    }
+}
+
+// **Profil Güncelleme**
+document.getElementById("profileForm").addEventListener("submit", async event => {
+    event.preventDefault();
+
+    const description = document.getElementById("profileDescription").value.trim();
+    if (!description) return alert("Açıklama boş olamaz!");
+
+    try {
+        const response = await fetch("http://localhost:8080/profile/update", {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ description })
+        });
+
+        if (response.ok) {
+            document.getElementById("profileMessage").textContent = "Profil güncellendi!";
+        } else {
+            alert("Güncelleme başarısız!");
+        }
+    } catch (error) {
+        console.error("Hata:", error);
+    }
+});
+
+// **Resim Yükleme**
+document.getElementById("uploadForm").addEventListener("submit", async event => {
+    event.preventDefault();
+    const fileInput = document.getElementById("file");
+    const file = fileInput.files[0];
+
+    if (!file) return alert("Lütfen bir resim seçin!");
+
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("description", "Yeni Yüklenen Resim");
+
+    try {
+        const response = await fetch("http://localhost:8080/images/upload", {
+            method: "POST",
+            body: formData
+        });
+
+        if (response.ok) {
+            alert("Resim başarıyla yüklendi!");
+            loadImages();
+            fileInput.value = "";
+        } else {
+            alert("Resim yüklenirken hata oluştu!");
+        }
+    } catch (error) {
+        console.error("Hata:", error);
+        alert("Bağlantı hatası!");
+    }
+});
+
+// **Resimleri Getirme**
+async function loadImages() {
+    try {
+        const response = await fetch("http://localhost:8080/images");
+        if (!response.ok) throw new Error("Resimler alınamadı!");
+
+        const images = await response.json();
+        const imageContainer = document.getElementById("imageContainer");
+        imageContainer.innerHTML = "";
+
+        images.forEach(({ id, data, name, description }) => {
+            const imageCard = document.createElement("div");
+            imageCard.className = "col-md-4 mb-4";
+            imageCard.innerHTML = `
+                <div class="card shadow-sm">
+                    <img src="${data}" class="card-img-top" alt="${name}">
+                    <div class="card-body text-center">
+                        <p class="card-text">${description}</p>
+                        <button class="btn btn-warning btn-sm" onclick="editImage(${id}, '${description}')">Düzenle</button>
+                        <button class="btn btn-danger btn-sm" onclick="deleteImage(${id})">Sil</button>
+                    </div>
+                </div>
+            `;
+            imageContainer.appendChild(imageCard);
+        });
+    } catch (error) {
+        console.error("Hata:", error);
+        alert("Resimler yüklenirken hata oluştu!");
+    }
+}
+
+// **Resim Silme**
+async function deleteImage(id) {
+    if (!confirm("Bu resmi silmek istediğinize emin misiniz?")) return;
+
+    try {
+        const response = await fetch(`http://localhost:8080/images/delete/${id}`, { method: "DELETE" });
+
+        if (response.ok) {
+            alert("Resim başarıyla silindi!");
+            loadImages();
+        } else {
+            alert("Resim silinirken hata oluştu!");
+        }
+    } catch (error) {
+        console.error("Hata:", error);
+        alert("Bağlantı hatası!");
+    }
+}
+
+// **Yetenekleri Yükleme**
+async function loadSkills() {
+    try {
+        const response = await fetch("http://localhost:8080/skills");
+        if (!response.ok) throw new Error("Yetenekler alınamadı!");
+
+        const skills = await response.json();
+        const skillsList = document.getElementById("skillsList");
+        skillsList.innerHTML = "";
+
+		skills.forEach(({ id, skillName }) => {
+            const skillItem = document.createElement("li");
+            skillItem.className = "list-group-item d-flex justify-content-between align-items-center";
+            skillItem.innerHTML = `
+                ${skillName}
+                <button class="btn btn-danger btn-sm" onclick="deleteSkill(${id})">Sil</button>
+            `;
+            skillsList.appendChild(skillItem);
+        });
+    } catch (error) {
+        console.error("Hata:", error);
+    }
+}
+
+// **Yetenek Ekleme**
+document.getElementById("skillsForm").addEventListener("submit", async event => {
+    event.preventDefault();
+
+    const skillName = document.getElementById("skillName").value.trim();
+    if (!skillName) return alert("Yetenek adı boş olamaz!");
+
+    try {
+        const response = await fetch("http://localhost:8080/skills/add", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+			body: JSON.stringify({ skillName: skillName })
+        });
+
+        if (response.ok) {
+            loadSkills();
+            document.getElementById("skillName").value = "";
+        } else {
+            alert("Yetenek eklenirken hata oluştu!");
+        }
+    } catch (error) {
+        console.error("Hata:", error);
+    }
+});
+
+// **Yetenek Silme**
+async function deleteSkill(id) {
+    if (!confirm("Bu yeteneği silmek istediğinize emin misiniz?")) return;
+
+    try {
+		const response = await fetch(`http://localhost:8080/skills/${id}`, { method: "DELETE" });
+
+        if (response.ok) {
+            loadSkills();
+        } else {
+            alert("Yetenek silinirken hata oluştu!");
+        }
+    } catch (error) {
+        console.error("Hata:", error);
+    }
+}
+
+// Sayfa Yüklendiğinde Yetenekleri Getir
+document.addEventListener("DOMContentLoaded", loadSkills);
+
+
+
+</script>
+
 </body>
 </html>
+
+
+
+
+
+
+
 
