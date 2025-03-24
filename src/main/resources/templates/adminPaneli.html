@@ -82,6 +82,10 @@
 	            <label for="description" class="form-label">Açıklama:</label>
 	            <input type="text" class="form-control" id="description" name="description">
 	        </div>
+			<div class="mb-3">
+			    <label for="imageLink" class="form-label">Resim Bağlantısı:</label>
+			    <input type="url" class="form-control" id="imageLink" name="imageLink" placeholder="Resim URL girin">
+			</div>
 	        <input type="hidden" id="imageId"> <!-- Düzenleme için resim ID'sini saklamak -->
 	        <button type="submit" class="btn btn-primary" id="uploadButton">Resmi Yükle</button>
 	        <button type="button" class="btn btn-success" id="saveButton" style="display:none;">Kaydet</button>
@@ -166,29 +170,42 @@ document.getElementById("uploadForm").addEventListener("submit", async event => 
     
     const fileInput = document.getElementById("file");
     const descriptionInput = document.getElementById("description");
+    const linkInput = document.getElementById("imageLink");
     const file = fileInput.files[0];
     const description = descriptionInput.value.trim();
-
-    if (!file) return alert("Lütfen bir resim seçin!");
-    if (!description) return alert("Lütfen bir açıklama girin!");
-
+    const imageId = document.getElementById("imageId").value;
     const formData = new FormData();
-    formData.append("file", file);
+
+    if (!description) return alert("Lütfen bir açıklama girin!");
     formData.append("description", description);
+    formData.append("link", linkInput.value.trim());
+
+    if (file) {
+        formData.append("file", file);
+    } else if (!imageId) {
+        return alert("Lütfen bir resim seçin!");
+    }
 
     try {
-        const response = await fetch("http://localhost:8080/images/upload", {
-            method: "POST",
-            body: formData
-        });
+        let response;
+        if (imageId) {
+            response = await fetch(`/images/update/${imageId}`, {
+                method: 'PUT',
+                body: formData,
+            });
+        } else {
+            response = await fetch("/images/upload",{
+                method: 'POST',
+                body: formData,
+            });
+        }
 
         if (response.ok) {
-            alert("Resim başarıyla yüklendi!");
+            alert(imageId ? "Resim başarıyla güncellendi!" : "Resim başarıyla yüklendi!");
             loadImages();
-            fileInput.value = "";
-            descriptionInput.value = "";
+            resetForm();
         } else {
-            alert("Resim yüklenirken hata oluştu!");
+            alert("İşlem sırasında hata oluştu!");
         }
     } catch (error) {
         console.error("Hata:", error);
@@ -197,57 +214,7 @@ document.getElementById("uploadForm").addEventListener("submit", async event => 
 });
 
 // **Resimleri Yüklemek**
-document.addEventListener("DOMContentLoaded", function () {
-    loadImages();
-
-    // **Kaydet butonuna tıklanınca güncelleme fonksiyonunu çağır**
-    document.getElementById("saveButton").addEventListener("click", updateImage);
-
-    // **Form gönderildiğinde yükleme veya güncelleme işlemini yap**
-    document.getElementById("uploadForm").addEventListener("submit", async function (e) {
-        e.preventDefault();
-
-        const imageId = document.getElementById("imageId").value;
-        const description = document.getElementById("description").value;
-        const fileInput = document.getElementById("file");
-        const formData = new FormData();
-
-        formData.append("description", description);
-
-        if (fileInput.files[0]) {
-            formData.append("file", fileInput.files[0]);
-        }
-
-        try {
-            let response;
-            if (imageId) {
-                // **Düzenleme işlemi**
-                response = await fetch(`/images/update/${imageId}`, {
-                    method: 'PUT',
-                    body: formData,
-                });
-            } else {
-                // **Yeni resim yükleme işlemi**
-                response = await fetch("/images", {
-                    method: 'POST',
-                    body: formData,
-                });
-            }
-
-            const data = await response.json();
-            if (data.success) {
-                alert("İşlem başarıyla gerçekleştirildi.");
-                loadImages();
-                resetForm();
-            } else {
-                
-            }
-        } catch (error) {
-            console.error("Hata:", error);
-            alert("Bir hata oluştu.");
-        }
-    });
-});
+document.addEventListener("DOMContentLoaded", loadImages);
 
 // **Resimleri yükleme fonksiyonu**
 async function loadImages() {
@@ -256,85 +223,49 @@ async function loadImages() {
         if (!response.ok) throw new Error("Resimler alınamadı!");
 
         const images = await response.json();
+		console.log(images);
         const imageContainer = document.getElementById("imageContainer");
-        imageContainer.innerHTML = ""; // **Temizle**
+        imageContainer.innerHTML = "";
 
-        images.forEach(({ id, data, name, description }) => {
-            const imageCard = document.createElement("div");
-            imageCard.className = "col-md-4 mb-4";
-            imageCard.innerHTML = `
-                <div class="card shadow-sm">
-                    <img src="${data}" class="card-img-top" alt="${name}">
-                    <div class="card-body text-center">
-                        <p class="card-text">${description}</p>
-                        <button class="btn btn-warning btn-sm" onclick="editImage(${id}, '${description}')">Düzenle</button>
-                        <button class="btn btn-danger btn-sm" onclick="deleteImage(${id})">Sil</button>
-                    </div>
-                </div>
-            `;
-            imageContainer.appendChild(imageCard);
-        });
+		images.forEach(({ id, data, name, description, link }) => {
+		    const imageCard = document.createElement("div");
+		    imageCard.className = "col-md-4 mb-4";
+		    imageCard.innerHTML = `
+		        <div class="card shadow-sm">
+		            <img src="${data}" class="card-img-top" alt="${name}" data-id="${id}">
+		            <div class="card-body text-center">
+		                <p class="card-text">${description}</p>
+		                <p class="text-muted">Link: ${link}</p>
+
+		                <button class="btn btn-warning btn-sm" onclick="editImage(${id}, '${description}')">Düzenle</button>
+		                <button class="btn btn-danger btn-sm" onclick="deleteImage(${id})">Sil</button>
+		            </div>
+		        </div>
+		    `;
+		    imageContainer.appendChild(imageCard);
+		});
+
+
     } catch (error) {
         console.error("Hata:", error);
         alert("Resimler yüklenirken hata oluştu!");
     }
 }
 
+
 // **Düzenleme butonuna tıklanınca formu güncelleme**
 function editImage(id, description) {
     document.getElementById("imageId").value = id;
     document.getElementById("description").value = description;
     document.getElementById("file").disabled = false;
-
-    // **Kaydet butonunu göster**
-    document.getElementById("saveButton").style.display = "inline-block";
     document.getElementById("uploadButton").style.display = "none";
+    document.getElementById("saveButton").style.display = "inline-block";
 }
-
-// **Kaydet butonuna tıklanınca güncelleme işlemi**
-async function updateImage() {
-    const imageId = document.getElementById("imageId").value;
-    const description = document.getElementById("description").value;
-    const fileInput = document.getElementById("file");
-    const formData = new FormData();
-
-    formData.append("description", description);
-    if (fileInput.files[0]) {
-        formData.append("file", fileInput.files[0]); // Dosya varsa ekle
-    }
-
-    try {
-        const response = await fetch(`/images/update/${imageId}`, {
-            method: 'PUT',
-            body: formData,
-        });
-
-        const data = await response.json();
-        console.log("API Yanıtı:", data);
-
-        if (data.success) {
-            alert("Resim başarıyla güncellendi!");
-
-            // Güncellenmiş resmi doğrudan güncelle
-            const imageElement = document.querySelector(`img[data-id="${imageId}"]`);
-            if (imageElement) {
-                imageElement.src = data.data; // Yeni resim kaynağını güncelle
-            }
-
-            loadImages(); // Tüm listeyi yenile
-        } else {
-            alert("Hata: " + data.message);
-        }
-    } catch (error) {
-        console.error("Hata:", error);
-        alert("Bir hata oluştu.");
-    }
-}
-
 
 // **Formu sıfırlama**
 function resetForm() {
     document.getElementById("uploadForm").reset();
+    document.getElementById("imageId").value = "";
     document.getElementById("file").disabled = false;
     document.getElementById("uploadButton").style.display = "inline-block";
     document.getElementById("saveButton").style.display = "none";

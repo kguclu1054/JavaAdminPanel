@@ -24,6 +24,19 @@ public class Image {
 
     @Column(length = 500) // Maksimum açıklama uzunluğu
     private String description;
+    
+    @Column(length = 1000) // Link için maksimum uzunluk
+    private String link; 
+    
+    
+
+	public String getLink() {
+		return link;
+	}
+
+	public void setLink(String link) {
+		this.link = link;
+	}
 
 	public Long getId() {
 		return id;

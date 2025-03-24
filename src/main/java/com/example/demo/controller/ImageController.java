@@ -39,9 +39,10 @@ public class ImageController {
     @PostMapping("/upload")
     public ResponseEntity<Map<String, Object>> uploadImage(
             @RequestParam("file") MultipartFile file, 
-            @RequestParam("description") String description) {
+            @RequestParam("description") String description,
+            @RequestParam(value = "link", required = false) String link){
         try {
-            Image savedImage = imageService.saveImage(file, description);
+            Image savedImage = imageService.saveImage(file, description, link);
             Map<String, Object> response = new HashMap<>();
             response.put("success", true);
             response.put("message", "Resim başarıyla yüklendi!");
@@ -62,8 +63,8 @@ public class ImageController {
             imageData.put("name", image.getName());
             imageData.put("description", image.getDescription());
             imageData.put("type", image.getType());
+            imageData.put("link", image.getLink());
 
-            
             String base64Image = Base64.getEncoder().encodeToString(image.getData());
             imageData.put("data", "data:" + image.getType() + ";base64," + base64Image);
 
@@ -72,6 +73,7 @@ public class ImageController {
 
         return ResponseEntity.ok(images);
     }
+
     
     @PutMapping("/update/{id}")
     public ResponseEntity<Map<String, Object>> updateImage(
