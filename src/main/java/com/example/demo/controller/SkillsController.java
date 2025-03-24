@@ -25,6 +25,8 @@ public class SkillsController {
     public Skills addSkill(@RequestBody Skills skill) {
         return skillService.addSkill(skill);
     }
+    
+    
 
     @PutMapping("/{id}")
     public Skills updateSkill(@PathVariable Long id, @RequestBody Skills skill) {

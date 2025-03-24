@@ -7,6 +7,5 @@ import com.example.demo.entity.Image;
 @Repository
 public interface ImageRepository extends JpaRepository<Image, Long> {
 
-	Image save(Image image);
 }
 

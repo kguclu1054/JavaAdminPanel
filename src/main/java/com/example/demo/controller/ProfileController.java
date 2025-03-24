@@ -28,6 +28,8 @@ public class ProfileController {
         profileRepository.save(existingProfile);
         return ResponseEntity.ok("Profil güncellendi!");
     }
+    
+    
 }
 
 

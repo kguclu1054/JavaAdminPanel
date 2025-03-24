@@ -40,7 +40,6 @@
 <div class="sidebar">
     <h4 class="text-center">Admin Panel</h4>
     <a href="#" onclick="showSection('profileSection')">Profil</a>
-    <a href="#" onclick="showSection('projectsSection')">Boş</a>
     <a href="#" onclick="showSection('imagesSection')">Projeler</a>
 	<a href="#" onclick="showSection('skillsSection')">Yetenekler</a>
 </div>
@@ -58,29 +57,42 @@
         <p id="profileMessage" class="mt-3 text-success"></p>
     </div>
 
-    <div id="projectsSection" class="content hidden">
-        <h2 class="text-primary">Projeler</h2>
-        <form id="projectForm">
-            <div class="mb-3">
-                <label for="projectName" class="form-label">Proje Adı:</label>
-                <input type="text" class="form-control" id="projectName" required>
-            </div>
-            <button type="submit" class="btn btn-primary">Projeyi Ekle</button>
-        </form>
-        <ul id="projectList" class="mt-3 list-group"></ul>
-    </div>
+	<div id="projectsSection" class="content hidden">
+	    <h2 class="text-primary">Projeler</h2>
+	    <form id="projectForm">
+	        <div class="mb-3">
+	            <label for="projectName" class="form-label">Proje Adı:</label>
+	            <input type="text" class="form-control" id="projectName" required>
+	        </div>
+	        <button type="submit" class="btn btn-primary">Projeyi Ekle</button>
+	    </form>
+	    <ul id="projectList" class="mt-3 list-group"></ul>
+	</div>
 
-    <div id="imagesSection" class="content hidden">
-        <h2 class="text-primary">Yüklenen Resimler</h2>
-        <form id="uploadForm" enctype="multipart/form-data" class="mt-4">
-            <div class="mb-3">
-                <label for="file" class="form-label">Resim Seç:</label>
-                <input type="file" class="form-control" id="file" name="file" required>
-            </div>
-            <button type="submit" class="btn btn-primary">Resmi Yükle</button>
-        </form>
-        <div id="imageContainer" class="row mt-4"></div>
-    </div>
+	<div id="imagesSection" class="content hidden">
+	    <h2 class="text-primary">Yüklenen Resimler</h2>
+
+	    <!-- Resim Yükleme ve Düzenleme Formu -->
+	    <form id="uploadForm" enctype="multipart/form-data" method="POST" action="/images/upload" class="mt-4">
+	        <div class="mb-3">
+	            <label for="file" class="form-label">Resim Seç:</label>
+	            <input type="file" class="form-control" id="file" name="file">
+	        </div>
+	        <div class="mb-3">
+	            <label for="description" class="form-label">Açıklama:</label>
+	            <input type="text" class="form-control" id="description" name="description">
+	        </div>
+	        <input type="hidden" id="imageId"> <!-- Düzenleme için resim ID'sini saklamak -->
+	        <button type="submit" class="btn btn-primary" id="uploadButton">Resmi Yükle</button>
+	        <button type="button" class="btn btn-success" id="saveButton" style="display:none;">Kaydet</button>
+	    </form>
+
+	    <div id="imageContainer" class="row mt-4"></div>
+	</div>
+
+
+
+
 	
 	<div id="skillsSection" class="content hidden">
 	    <h2 class="text-primary">Yetenekler</h2>
@@ -89,10 +101,15 @@
 	            <label for="skillName" class="form-label">Yetenek Adı:</label>
 	            <input type="text" class="form-control" id="skillName" required>
 	        </div>
+	        <div class="mb-3">
+	            <label for="skillPercentage" class="form-label">Yüzde (%) :</label>
+	            <input type="number" class="form-control" id="skillPercentage" min="0" max="100" required>
+	        </div>
 	        <button type="submit" class="btn btn-primary">Yetenek Ekle</button>
 	    </form>
 	    <ul id="skillsList" class="mt-3 list-group"></ul>
 	</div>
+
 </div>
 
 <script>
@@ -146,14 +163,18 @@ document.getElementById("profileForm").addEventListener("submit", async event =>
 // **Resim Yükleme**
 document.getElementById("uploadForm").addEventListener("submit", async event => {
     event.preventDefault();
+    
     const fileInput = document.getElementById("file");
+    const descriptionInput = document.getElementById("description");
     const file = fileInput.files[0];
+    const description = descriptionInput.value.trim();
 
     if (!file) return alert("Lütfen bir resim seçin!");
+    if (!description) return alert("Lütfen bir açıklama girin!");
 
     const formData = new FormData();
     formData.append("file", file);
-    formData.append("description", "Yeni Yüklenen Resim");
+    formData.append("description", description);
 
     try {
         const response = await fetch("http://localhost:8080/images/upload", {
@@ -165,6 +186,7 @@ document.getElementById("uploadForm").addEventListener("submit", async event => 
             alert("Resim başarıyla yüklendi!");
             loadImages();
             fileInput.value = "";
+            descriptionInput.value = "";
         } else {
             alert("Resim yüklenirken hata oluştu!");
         }
@@ -174,7 +196,60 @@ document.getElementById("uploadForm").addEventListener("submit", async event => 
     }
 });
 
-// **Resimleri Getirme**
+// **Resimleri Yüklemek**
+document.addEventListener("DOMContentLoaded", function () {
+    loadImages();
+
+    // **Kaydet butonuna tıklanınca güncelleme fonksiyonunu çağır**
+    document.getElementById("saveButton").addEventListener("click", updateImage);
+
+    // **Form gönderildiğinde yükleme veya güncelleme işlemini yap**
+    document.getElementById("uploadForm").addEventListener("submit", async function (e) {
+        e.preventDefault();
+
+        const imageId = document.getElementById("imageId").value;
+        const description = document.getElementById("description").value;
+        const fileInput = document.getElementById("file");
+        const formData = new FormData();
+
+        formData.append("description", description);
+
+        if (fileInput.files[0]) {
+            formData.append("file", fileInput.files[0]);
+        }
+
+        try {
+            let response;
+            if (imageId) {
+                // **Düzenleme işlemi**
+                response = await fetch(`/images/update/${imageId}`, {
+                    method: 'PUT',
+                    body: formData,
+                });
+            } else {
+                // **Yeni resim yükleme işlemi**
+                response = await fetch("/images", {
+                    method: 'POST',
+                    body: formData,
+                });
+            }
+
+            const data = await response.json();
+            if (data.success) {
+                alert("İşlem başarıyla gerçekleştirildi.");
+                loadImages();
+                resetForm();
+            } else {
+                
+            }
+        } catch (error) {
+            console.error("Hata:", error);
+            alert("Bir hata oluştu.");
+        }
+    });
+});
+
+// **Resimleri yükleme fonksiyonu**
 async function loadImages() {
     try {
         const response = await fetch("http://localhost:8080/images");
@@ -182,7 +257,7 @@ async function loadImages() {
 
         const images = await response.json();
         const imageContainer = document.getElementById("imageContainer");
-        imageContainer.innerHTML = "";
+        imageContainer.innerHTML = ""; // **Temizle**
 
         images.forEach(({ id, data, name, description }) => {
             const imageCard = document.createElement("div");
@@ -205,6 +280,66 @@ async function loadImages() {
     }
 }
 
+// **Düzenleme butonuna tıklanınca formu güncelleme**
+function editImage(id, description) {
+    document.getElementById("imageId").value = id;
+    document.getElementById("description").value = description;
+    document.getElementById("file").disabled = false;
+
+    // **Kaydet butonunu göster**
+    document.getElementById("saveButton").style.display = "inline-block";
+    document.getElementById("uploadButton").style.display = "none";
+}
+
+// **Kaydet butonuna tıklanınca güncelleme işlemi**
+async function updateImage() {
+    const imageId = document.getElementById("imageId").value;
+    const description = document.getElementById("description").value;
+    const fileInput = document.getElementById("file");
+    const formData = new FormData();
+
+    formData.append("description", description);
+    if (fileInput.files[0]) {
+        formData.append("file", fileInput.files[0]); // Dosya varsa ekle
+    }
+
+    try {
+        const response = await fetch(`/images/update/${imageId}`, {
+            method: 'PUT',
+            body: formData,
+        });
+
+        const data = await response.json();
+        console.log("API Yanıtı:", data);
+
+        if (data.success) {
+            alert("Resim başarıyla güncellendi!");
+
+            // Güncellenmiş resmi doğrudan güncelle
+            const imageElement = document.querySelector(`img[data-id="${imageId}"]`);
+            if (imageElement) {
+                imageElement.src = data.data; // Yeni resim kaynağını güncelle
+            }
+
+            loadImages(); // Tüm listeyi yenile
+        } else {
+            alert("Hata: " + data.message);
+        }
+    } catch (error) {
+        console.error("Hata:", error);
+        alert("Bir hata oluştu.");
+    }
+}
+
+
+// **Formu sıfırlama**
+function resetForm() {
+    document.getElementById("uploadForm").reset();
+    document.getElementById("file").disabled = false;
+    document.getElementById("uploadButton").style.display = "inline-block";
+    document.getElementById("saveButton").style.display = "none";
+}
+
 // **Resim Silme**
 async function deleteImage(id) {
     if (!confirm("Bu resmi silmek istediğinize emin misiniz?")) return;
@@ -224,6 +359,7 @@ async function deleteImage(id) {
     }
 }
 
+
 // **Yetenekleri Yükleme**
 async function loadSkills() {
     try {
@@ -234,37 +370,51 @@ async function loadSkills() {
         const skillsList = document.getElementById("skillsList");
         skillsList.innerHTML = "";
 
-		skills.forEach(({ id, skillName }) => {
-            const skillItem = document.createElement("li");
-            skillItem.className = "list-group-item d-flex justify-content-between align-items-center";
-            skillItem.innerHTML = `
-                ${skillName}
-                <button class="btn btn-danger btn-sm" onclick="deleteSkill(${id})">Sil</button>
-            `;
-            skillsList.appendChild(skillItem);
-        });
+		skills.forEach(({ id, skillName, percentage }) => {
+		    const skillItem = document.createElement("li");
+		    skillItem.className = "list-group-item d-flex justify-content-between align-items-center";
+		    skillItem.innerHTML = `
+		        <span>${skillName} - <strong>${percentage}%</strong></span>
+		        <div>
+		            <button class="btn btn-warning btn-sm" onclick="editSkill(${id}, '${skillName}', ${percentage})">Düzenle</button>
+		            <button class="btn btn-danger btn-sm" onclick="deleteSkill(${id})">Sil</button>
+		        </div>
+		    `;
+		    skillsList.appendChild(skillItem);
+		});
+
     } catch (error) {
         console.error("Hata:", error);
     }
 }
+
 
 // **Yetenek Ekleme**
 document.getElementById("skillsForm").addEventListener("submit", async event => {
     event.preventDefault();
 
     const skillName = document.getElementById("skillName").value.trim();
-    if (!skillName) return alert("Yetenek adı boş olamaz!");
+    const skillPercentage = document.getElementById("skillPercentage").value.trim();
+
+    console.log("Gönderilen Yetenek Adı:", skillName);
+    console.log("Gönderilen Yüzde:", skillPercentage);
+
+    if (!skillName || !skillPercentage) return alert("Yetenek adı ve yüzdesi boş olamaz!");
 
     try {
         const response = await fetch("http://localhost:8080/skills/add", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-			body: JSON.stringify({ skillName: skillName })
+            body: JSON.stringify({ 
+                skillName: skillName,
+                percentage: Number(skillPercentage) // Sayıya çeviriyoruz
+            })
         });
 
         if (response.ok) {
             loadSkills();
             document.getElementById("skillName").value = "";
+            document.getElementById("skillPercentage").value = "";
         } else {
             alert("Yetenek eklenirken hata oluştu!");
         }
@@ -272,6 +422,68 @@ document.getElementById("skillsForm").addEventListener("submit", async event => 
         console.error("Hata:", error);
     }
 });
+
+async function updateSkill(id) {
+    const skillName = document.getElementById("skillName").value.trim();
+    const skillPercentage = Number(document.getElementById("skillPercentage").value.trim());
+
+    if (!skillName || isNaN(skillPercentage) || skillPercentage < 0 || skillPercentage > 100) {
+        alert("Lütfen geçerli bir yetenek adı ve yüzde değeri girin!");
+        return;
+    }
+
+    try {
+        const response = await fetch(`http://localhost:8080/skills/${id}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ skillName, percentage: skillPercentage })
+        });
+
+        if (response.ok) {
+            alert("Yetenek başarıyla güncellendi!");
+            loadSkills();
+            resetSkillForm();
+        } else {
+            alert("Yetenek güncellenirken hata oluştu!");
+        }
+    } catch (error) {
+        console.error("Hata:", error);
+    }
+}
+
+function resetSkillForm() {
+    document.getElementById("skillName").value = "";
+    document.getElementById("skillPercentage").value = "";
+    
+    const submitBtn = document.getElementById("skillsForm").querySelector("button");
+    submitBtn.textContent = "Yetenek Ekle";
+    submitBtn.classList.remove("btn-success");
+    submitBtn.classList.add("btn-primary");
+    submitBtn.onclick = async function(event) {
+        event.preventDefault();
+        await addSkill();
+    };
+}
+
+
+function editSkill(id, skillName, percentage) {
+    document.getElementById("skillName").value = skillName;
+    document.getElementById("skillPercentage").value = percentage;
+    
+    // Güncelleme için butonu değiştir
+    const submitBtn = document.getElementById("skillsForm").querySelector("button");
+    submitBtn.textContent = "Güncelle";
+    submitBtn.classList.remove("btn-primary");
+    submitBtn.classList.add("btn-success");
+    
+    // Güncelleme işlemi için event listener ekle
+    submitBtn.onclick = async function(event) {
+        event.preventDefault();
+        await updateSkill(id);
+    };
+}
+
+
 
 // **Yetenek Silme**
 async function deleteSkill(id) {

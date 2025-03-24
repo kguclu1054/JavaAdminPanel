@@ -7,6 +7,7 @@
     
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&family=Roboto:wght@300;400;700&display=swap" rel="stylesheet">
+	
     
     <style>
         html {
@@ -31,7 +32,9 @@
         body {
             font-family: 'Poppins', sans-serif;
             font-size: 16px;
-            color: #333;
+			background-color: #f8f9fa;
+		    color: #333;
+		    transition: background-color 0.5s ease, color 0.5s ease;
         }
 
         h2, h3 {
@@ -70,8 +73,31 @@
         }
 		
 		#anasayfa {
-		    padding: 80px 0;
+		    padding: 130px 0;
 		}
+		
+		#yetenekler {
+		    padding-top: 80px; /* Üstten boşluk ekler */
+		}
+		
+		#yetenekler .progress {
+		    margin-bottom: 30px; /* Boşluğu artır */
+		}
+		
+		/* Button hover animasyonları */
+		.hover-effect {
+		    transition: transform 0.3s ease, box-shadow 0.3s ease;
+		}
+		.hover-effect:hover {
+		    transform: translateY(-5px);
+		    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+		}
+		
+		.dark-mode {
+		    background-color: #444343;
+		    color: #f1f1f1;
+		   }
+
 
     </style>
 </head>
@@ -84,17 +110,20 @@
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
             </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav ms-auto">
-                    <li class="nav-item"><a class="nav-link" href="#anasayfa">Anasayfa</a></li>
-                    <li class="nav-item"><a class="nav-link" href="#yetenekler">Yetenekler</a></li>
-                    <li class="nav-item"><a class="nav-link" href="#projeler">Projeler</a></li>
-                    <li class="nav-item"><a class="nav-link" href="#iletisim">İletişim</a></li>
-                </ul>
-            </div>
+			<div class="collapse navbar-collapse" id="navbarNav">
+			    <ul class="navbar-nav ms-auto">
+			        <li class="nav-item"><a class="nav-link" href="#anasayfa">Anasayfa</a></li>
+			        <li class="nav-item"><a class="nav-link" href="#yetenekler">Yetenekler</a></li>
+			        <li class="nav-item"><a class="nav-link" href="#projeler">Projeler</a></li>
+			        <li class="nav-item"><a class="nav-link" href="#iletisim">İletişim</a></li>
+			    </ul>
+			</div>
+			<!-- Karanlık Mod Geçiş Butonu -->
+			<button id="toggleMode" class="btn btn-outline-light ms-3">Karanlık Mod</button>
+
         </div>
     </nav>
-
+	
     <!-- Anasayfa -->
     <section id="anasayfa" class="container mt-5">
         <div class="row align-items-center">
@@ -109,7 +138,7 @@
     </section>
 
     <!-- Yetenekler -->
-	<section id="yetenekler" class="container text-center bg-light skills-section">
+	<section id="yetenekler" class="container text-center bg-light skills-section mt-5">
 	    <h3 class="mb-4">Yetenekler</h3>
 	    <div id="skillsContainer" class="row justify-content-center"></div>
 	</section>
@@ -121,34 +150,76 @@
     </section>
 
     <!-- İletişim -->
-    <section id="iletisim" class="container text-center">
-        <h3>İletişim</h3>
-        <p><strong>Email:</strong> kaan@example.com</p>
-        <p><strong>GitHub:</strong> <a href="https://github.com/kullanicigithub" target="_blank">GitHub Profilim</a></p>
-    </section>
+	<section id="iletisim" class="container py-5">
+	    <h3 class="text-center mb-4">📩 İletişim</h3>
+
+	    <div class="row justify-content-center">
+	        <!-- İletişim Formu -->
+	        <div class="col-md-6 animate__animated animate__fadeInLeft">
+	            <h5 class="text-center mb-3">Bana Ulaşın</h5>
+	            <form action="iletisim.php" method="POST" class="p-3 border rounded shadow-sm">
+	                <div class="form-group mb-3">
+	                    <label for="isim" class="form-label">Adınız Soyadınız</label>
+	                    <input type="text" id="isim" name="isim" class="form-control" placeholder="Adınız Soyadınız" required>
+	                </div>
+	                <div class="form-group mb-3">
+	                    <label for="email" class="form-label">Email Adresiniz</label>
+	                    <input type="email" id="email" name="email" class="form-control" placeholder="Email Adresiniz" required>
+	                </div>
+	                <div class="form-group mb-3">
+	                    <label for="mesaj" class="form-label">Mesajınız</label>
+	                    <textarea id="mesaj" name="mesaj" class="form-control" rows="4" placeholder="Mesajınız" required></textarea>
+	                </div>
+	                <button type="submit" class="btn btn-primary w-100">Gönder</button>
+	            </form>
+	        </div>
+
+	        <!-- Sosyal Medya Hesapları -->
+	        <div class="col-md-4 text-center animate__animated animate__fadeInRight">
+	            <h5 class="mb-3">Sosyal Medya</h5>
+	            <div class="d-flex flex-column gap-2">
+	                <a href="https://linkedin.com/in/kullanici" target="_blank" class="btn btn-outline-primary btn-lg hover-effect">
+	                    <i class="fab fa-linkedin"></i> LinkedIn
+	                </a>
+	                <a href="https://github.com/kullanicigithub" target="_blank" class="btn btn-outline-dark btn-lg hover-effect">
+	                    <i class="fab fa-github"></i> GitHub
+	                </a>
+	                <a href="https://instagram.com/kullanici" target="_blank" class="btn btn-outline-danger btn-lg hover-effect">
+	                    <i class="fab fa-instagram"></i> Instagram
+	                </a>
+	            </div>
+	        </div>
+	    </div>
+	</section>
+
+
+
 
     <!-- JavaScript -->
     <script>
-        async function loadImages() {
-            try {
-                const response = await fetch('/images');
-                if (!response.ok) throw new Error("Resimler alınamadı!");
+		async function loadImages() {
+		    try {
+		        const response = await fetch('/images');
+		        if (!response.ok) throw new Error("Resimler alınamadı!");
 
-                const images = await response.json();
-                document.getElementById('imageContainer').innerHTML = images.map(image => `
-                    <div class="col-md-4 mb-4">
-                        <div class="card shadow-sm">
-                            <img src="${image.data}" class="card-img-top" alt="${image.description}" style="height: 200px; object-fit: cover;">
-                            <div class="card-body text-center">
-                                <p class="card-text">${image.description}</p>
-                            </div>
-                        </div>
-                    </div>
-                `).join('');
-            } catch (error) {
-                console.error(error);
-            }
-        }
+		        const images = await response.json();
+		        document.getElementById('imageContainer').innerHTML = images.map(image => `
+		            <div class="col-md-4 mb-4">
+		                <div class="card shadow-sm">
+		                    <img src="${image.data}" class="card-img-top" alt="${image.description}" style="height: 200px; object-fit: cover;">
+		                    <div class="card-body text-center">
+		                        <p class="card-text">${image.description}</p>
+		                        <!-- Link eklendi -->
+		                        <a href="${image.link}" target="_blank" class="btn btn-primary">Projeyi Görüntüle</a>
+		                    </div>
+		                </div>
+		            </div>
+		        `).join('');
+		    } catch (error) {
+		        console.error(error);
+		    }
+		}
+
 
         async function fetchProfileDescription() {
             try {
@@ -165,24 +236,36 @@
 		        if (!response.ok) throw new Error("Yetenekler alınamadı!");
 
 		        const skills = await response.json();
-		        console.log("API Yanıtı:", skills); // <-- Yanıtı konsolda görmek için
+		        console.log("API Yanıtı:", skills); // Konsolda kontrol et
 
+		        const colors = ['bg-primary', 'bg-success', 'bg-danger', 'bg-warning', 'bg-info', 'bg-dark'];
+		        
 		        const skillsContainer = document.getElementById('skillsContainer');
 
-				skillsContainer.innerHTML = skills.map(skill => `
-				    <div class="col-md-6 mb-3">
-				        <h5 class="text-start">${skill.skillName}</h5>
-				        <div class="progress">
-				            <div class="progress-bar bg-primary" role="progressbar" style="width: 50%;">50%</div>
-				        </div>
-				    </div>
-				`).join('');
+		        skillsContainer.innerHTML = skills.map((skill, index) => `
+		            <div class="col-md-6 mb-3">
+		                <h5 class="text-start">${skill.skillName}</h5>
+		                <div class="progress">
+		                    <div class="progress-bar ${colors[index % colors.length]}" role="progressbar" 
+		                        style="width: 0%;" 
+		                        data-width="${skill.percentage}%">${skill.percentage}%</div>
+		                </div>
+		            </div>
+		        `).join('');
 
-		        document.querySelectorAll(".progress-bar").forEach(bar => bar.style.width = bar.dataset.width);
+		        // Yavaşça genişleme efekti için
+		        setTimeout(() => {
+		            document.querySelectorAll(".progress-bar").forEach(bar => {
+		                bar.style.width = bar.dataset.width;
+		            });
+		        }, 200);
+		        
 		    } catch (error) {
 		        console.error("Hata:", error);
 		    }
 		}
+
+
 
 
         document.addEventListener("DOMContentLoaded", function() {
@@ -190,9 +273,21 @@
             loadImages();
             fetchSkills(); // Yetenekleri çek
         });
+		
+		const toggleButton = document.getElementById('toggleMode');
+		toggleButton.addEventListener('click', function() {
+		    document.body.classList.toggle('dark-mode');
+		    if (document.body.classList.contains('dark-mode')) {
+		        toggleButton.textContent = 'Normal Mod';
+		    } else {
+		        toggleButton.textContent = 'Karanlık Mod';
+		    }
+		});
+
     </script>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
 
 </body>
 </html>

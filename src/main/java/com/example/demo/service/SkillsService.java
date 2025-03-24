@@ -29,6 +29,7 @@ public class SkillsService {
         if (existingSkill.isPresent()) {
             Skills skill = existingSkill.get();
             skill.setSkillName(newSkill.getSkillName());
+            skill.setPercentage(newSkill.getPercentage());
             return skillRepository.save(skill);
         }
         return null;

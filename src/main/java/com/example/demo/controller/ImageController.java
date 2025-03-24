@@ -37,16 +37,21 @@ public class ImageController {
     private ImageRepository imageRepository;
 
     @PostMapping("/upload")
-    public ResponseEntity<String> uploadImage(
+    public ResponseEntity<Map<String, Object>> uploadImage(
             @RequestParam("file") MultipartFile file, 
             @RequestParam("description") String description) {
         try {
             Image savedImage = imageService.saveImage(file, description);
-            return ResponseEntity.ok("Resim başarıyla yüklendi! ID: " + savedImage.getId());
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("message", "Resim başarıyla yüklendi!");
+            response.put("id", savedImage.getId());
+            return ResponseEntity.ok(response);
         } catch (IOException e) {
-            return ResponseEntity.status(500).body("Hata oluştu: " + e.getMessage());
+            return ResponseEntity.status(500).body(Map.of("success", false, "message", "Hata oluştu: " + e.getMessage()));
         }
     }
+
     
     
     @GetMapping
@@ -69,21 +74,46 @@ public class ImageController {
     }
     
     @PutMapping("/update/{id}")
-    public ResponseEntity<String> updateImage(
+    public ResponseEntity<Map<String, Object>> updateImage(
             @PathVariable Long id,
-            @RequestParam("file") MultipartFile file,
+            @RequestParam(value = "file", required = false) MultipartFile file, // Dosya zorunlu değil
             @RequestParam("description") String description) {
         try {
-            Image updatedImage = imageService.updateImage(id, file, description);
-            if (updatedImage != null) {
-                return ResponseEntity.ok("Resim başarıyla güncellendi!");
+            Optional<Image> optionalImage = imageRepository.findById(id);
+            if (optionalImage.isPresent()) {
+                Image image = optionalImage.get();
+                image.setDescription(description);
+
+                if (file != null && !file.isEmpty()) {
+                    image.setData(file.getBytes());
+                    image.setName(file.getOriginalFilename());
+                    image.setType(file.getContentType());
+                }
+
+                imageRepository.save(image);
+
+                // Güncellenen veriyi JSON formatında geri döndür
+                Map<String, Object> response = new HashMap<>();
+                response.put("success", true);
+                response.put("message", "Resim başarıyla güncellendi!");
+                response.put("id", image.getId());
+                response.put("name", image.getName());
+                response.put("description", image.getDescription());
+                response.put("type", image.getType());
+
+                // Base64 kodlanmış veri ekleme
+                String base64Image = Base64.getEncoder().encodeToString(image.getData());
+                response.put("data", "data:" + image.getType() + ";base64," + base64Image);
+
+                return ResponseEntity.ok(response);
             } else {
-                return ResponseEntity.status(404).body("Resim bulunamadı!");
+                return ResponseEntity.status(404).body(Map.of("success", false, "message", "Resim bulunamadı!"));
             }
         } catch (IOException e) {
-            return ResponseEntity.status(500).body("Hata oluştu: " + e.getMessage());
+            return ResponseEntity.status(500).body(Map.of("success", false, "message", "Hata oluştu: " + e.getMessage()));
         }
     }
+
 
     @DeleteMapping("/delete/{id}")
     public ResponseEntity<String> deleteImage(@PathVariable Long id) {
