@@ -236,8 +236,7 @@ async function loadImages() {
 		            <div class="card-body text-center">
 		                <p class="card-text">${description}</p>
 		                <p class="text-muted">Link: ${link}</p>
-
-		                <button class="btn btn-warning btn-sm" onclick="editImage(${id}, '${description}')">Düzenle</button>
+						<button class="btn btn-warning btn-sm" onclick="editImage(${id}, '${description}', '${link}')">Düzenle</button>
 		                <button class="btn btn-danger btn-sm" onclick="deleteImage(${id})">Sil</button>
 		            </div>
 		        </div>
@@ -254,10 +253,11 @@ async function loadImages() {
 
 
 // **Düzenleme butonuna tıklanınca formu güncelleme**
-function editImage(id, description) {
+function editImage(id, description,link) {
     document.getElementById("imageId").value = id;
     document.getElementById("description").value = description;
     document.getElementById("file").disabled = false;
+	document.getElementById("imageLink").value = link;
     document.getElementById("uploadButton").style.display = "none";
     document.getElementById("saveButton").style.display = "inline-block";
 }
@@ -289,6 +289,44 @@ async function deleteImage(id) {
         alert("Bağlantı hatası!");
     }
 }
+
+document.getElementById("saveButton").addEventListener("click", async () => {
+    const fileInput = document.getElementById("file");
+    const descriptionInput = document.getElementById("description");
+    const linkInput = document.getElementById("imageLink");
+    const imageId = document.getElementById("imageId").value;
+    
+    if (!imageId) {
+        return alert("Güncellenecek resim seçilmedi!");
+    }
+
+    const formData = new FormData();
+    formData.append("description", descriptionInput.value.trim());
+    formData.append("link", linkInput.value.trim());
+
+    if (fileInput.files.length > 0) {
+        formData.append("file", fileInput.files[0]);
+    }
+
+    try {
+        const response = await fetch(`/images/update/${imageId}`, {
+            method: 'PUT',
+            body: formData,
+        });
+
+        if (response.ok) {
+            alert("Resim başarıyla güncellendi!");
+            loadImages();
+            resetForm();
+        } else {
+            alert("Güncelleme sırasında hata oluştu!");
+        }
+    } catch (error) {
+        console.error("Hata:", error);
+        alert("Bağlantı hatası!");
+    }
+});
+
 
 
 // **Yetenekleri Yükleme**

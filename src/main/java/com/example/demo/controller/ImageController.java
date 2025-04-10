@@ -79,12 +79,17 @@ public class ImageController {
     public ResponseEntity<Map<String, Object>> updateImage(
             @PathVariable Long id,
             @RequestParam(value = "file", required = false) MultipartFile file, // Dosya zorunlu değil
-            @RequestParam("description") String description) {
+            @RequestParam("description") String description,
+            @RequestParam(value = "link", required = false)String link) {
         try {
             Optional<Image> optionalImage = imageRepository.findById(id);
             if (optionalImage.isPresent()) {
                 Image image = optionalImage.get();
                 image.setDescription(description);
+                
+                if (link != null) {
+                    image.setLink(link);
+                }
 
                 if (file != null && !file.isEmpty()) {
                     image.setData(file.getBytes());
@@ -102,10 +107,13 @@ public class ImageController {
                 response.put("name", image.getName());
                 response.put("description", image.getDescription());
                 response.put("type", image.getType());
+                response.put("link", image.getLink());
 
                 // Base64 kodlanmış veri ekleme
-                String base64Image = Base64.getEncoder().encodeToString(image.getData());
-                response.put("data", "data:" + image.getType() + ";base64," + base64Image);
+                if (image.getData() != null) {
+                    String base64Image = Base64.getEncoder().encodeToString(image.getData());
+                    response.put("data", "data:" + image.getType() + ";base64," + base64Image);
+                }
 
                 return ResponseEntity.ok(response);
             } else {
